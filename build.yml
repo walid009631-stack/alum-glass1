@@ -1,0 +1,33 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip
+        run: unzip -o alum-glass.zip -d src
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Build
+        run: |
+          mkdir -p ~/.android
+          cp src/debug.keystore ~/.android/debug.keystore
+          flutter create --platforms=android --project-name alum_glass app
+          cp -r src/lib/. app/lib/
+          cp src/pubspec.yaml app/pubspec.yaml
+          sed -i 's/android:label="[^"]*"/android:label="WD Alu Glass"/' app/android/app/src/main/AndroidManifest.xml
+          cd app
+          flutter pub get
+          flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alum-glass-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
